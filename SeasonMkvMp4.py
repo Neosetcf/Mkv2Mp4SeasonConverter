@@ -66,6 +66,11 @@ def remove_m3u8_folder(m3u8_folder_path, verbosity=NORMAL):
         if verbosity >= NORMAL:
             print(f"[NORMAL] Error removing m3u8 folder: {e}")
 
+def is_valid_directory(path):
+    if path is None:  # Explicitly check for None
+        return False
+    return os.path.exists(path) and os.path.isdir(path)
+
 def rename_mkv(file_path, season_number, verbosity=NORMAL):
     try:
         file_name = os.path.splitext(os.path.basename(file_path))[0]
@@ -300,11 +305,15 @@ def load_settings(config_file_path):
 
 def get_saved_paths(settings):
     if settings:
-        return (
-            settings.get("starting_dir"),
-            settings.get("storage_location"),
-        )
-    return None, None
+        starting_dir = settings.get("starting_dir")
+        storage_location = settings.get("storage_location")
+
+        # Return None for paths that are not found in config
+        if not starting_dir or not storage_location:
+            return None, None  # Or "", "" if you prefer empty strings
+        return starting_dir, storage_location
+
+    return None, None  # Or "", ""
 
 def prompt_for_paths():
     starting_dir = filedialog.askdirectory(title="Select Starting Directory")
@@ -316,8 +325,10 @@ def prompt_for_paths():
     return starting_dir, storage_location
 
 def validate_and_prompt(path, title):
-    if not path or not is_valid_directory(path):
-        return filedialog.askdirectory(title=title)
+    while path is None or not is_valid_directory(path): #Loop until valid path is given
+        path = filedialog.askdirectory(title=title)
+        if not path: #If user cancels the dialog
+            exit() #Exit the program
     return path
 
 def get_user_paths(settings):
@@ -335,6 +346,7 @@ def get_user_paths(settings):
         starting_dir, storage_location = prompt_for_paths()
         save_settings(CONFIG_FILE, starting_dir, storage_location)
         return starting_dir, storage_location
+
 
 def setup_verbosity():
     VERBOSITY = NORMAL
