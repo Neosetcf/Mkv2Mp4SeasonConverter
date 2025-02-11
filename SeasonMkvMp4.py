@@ -393,3 +393,4 @@ if __name__ == "__main__":
     base_dir = starting_dir
     verbosity = setup_verbosity()
     process_files(starting_dir, storage_location, base_dir, verbosity)
+    subprocess.run(["stty", "echo"])
