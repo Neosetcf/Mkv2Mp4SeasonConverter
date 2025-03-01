@@ -1,13 +1,3 @@
-#--- this version requires you to do pip install ffmpeg-python
-#--- you also need to do pip install psutil
-#--- if you do not want to monitor your ram nor cpu usage while running the program
-#--- simply do the following
-#--- Delete the line import psutil
-#--- Remove the cpu_label, ram_label, max_cpu_label, and max_cpu_entry related code.
-#--- Remove the update_usage function entirely.
-#--- Remove the calls to update_usage() and the setting of the cpu and ram labels in the start_processing() function.
-
-
 import os
 import re
 import shutil
@@ -15,7 +5,6 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, Listbox
 import configparser
 import ffmpeg
-import psutil
 from enum import Enum
 
 class Verbosity(Enum):
@@ -66,13 +55,13 @@ config = Config()
 
 def is_folder_empty(folder_path, verbosity=Verbosity.NORMAL):
     is_empty = not any(os.scandir(folder_path))
-    if verbosity >= Verbosity.VERBOSE:
+    if verbosity.value >= Verbosity.VERBOSE.value:
         print(f"[VERBOSE] Checking if folder '{folder_path}' is empty: {is_empty}")
     return is_empty
 
 def get_mkv_filenames(target_folder, verbosity=Verbosity.NORMAL):
     filenames = {os.path.splitext(f)[0] for f in os.listdir(target_folder) if f.endswith(".mkv")}
-    if verbosity >= Verbosity.VERBOSE:
+    if verbosity.value >= Verbosity.VERBOSE.value:
         print(f"[VERBOSE] MKV filenames in '{target_folder}': {filenames}")
     return filenames
 
@@ -84,7 +73,7 @@ def extract_episode_number(file_path, verbosity=Verbosity.NORMAL):
         if match:
             return match.group(1)
         else:
-            if verbosity >= Verbosity.NORMAL:
+            if verbosity.value >= Verbosity.NORMAL.value:
                 print(f"[NORMAL] Could not extract episode number from folder name: {folder_name}")
             return None
     patterns = [r"E(\d+)", r"(\d+)\.", r"\[(\d+)\]", r"(\d+)(?!.*\d)"]
@@ -92,7 +81,7 @@ def extract_episode_number(file_path, verbosity=Verbosity.NORMAL):
         match = re.search(pattern, filename, re.IGNORECASE)
         if match:
             return match.group(1)
-    if verbosity >= Verbosity.NORMAL:
+    if verbosity.value >= Verbosity.NORMAL.value:
         print(f"[NORMAL] Could not extract episode number from: {file_path}")
     return None
 
@@ -101,22 +90,22 @@ def extract_season_number(target_folder, verbosity=Verbosity.NORMAL):
         match = re.search(r"Season\s*(\d+)|S(\d+)|(\d+)\s*season", target_folder, re.IGNORECASE)
         if match:
             season_number = next(group for group in match.groups() if group is not None)
-            if verbosity >= Verbosity.VERBOSE:
+            if verbosity.value >= Verbosity.VERBOSE.value:
                 print(f"[VERBOSE] Extracted season number from '{target_folder}': {season_number}")
             return season_number
         return "1"
     except Exception as e:
-        if verbosity >= Verbosity.NORMAL:
+        if verbosity.value >= Verbosity.NORMAL.value:
             print(f"[NORMAL] Error extracting season number: {e}")
         return "1"
 
 def remove_m3u8_folder(m3u8_folder_path, verbosity=Verbosity.NORMAL):
     try:
         shutil.rmtree(m3u8_folder_path)
-        if verbosity >= Verbosity.VERBOSE:
+        if verbosity.value >= Verbosity.VERBOSE.value:
             print(f"[VERBOSE] Removed m3u8 folder: {m3u8_folder_path}")
     except Exception as e:
-        if verbosity >= Verbosity.NORMAL:
+        if verbosity.value >= Verbosity.NORMAL.value:
             print(f"[NORMAL] Error removing m3u8 folder: {e}")
 
 def is_valid_directory(path):
@@ -145,11 +134,11 @@ def rename_mkv(file_path, season_number, verbosity=Verbosity.NORMAL):
             new_filepath = os.path.join(os.path.dirname(file_path), new_filename)
             counter += 1
         os.rename(file_path, new_filepath)
-        if verbosity >= Verbosity.VERBOSE:
+        if verbosity.value >= Verbosity.VERBOSE.value:
             print(f"[VERBOSE] Renamed: {file_path} to {new_filepath}")
         return new_filepath
     except Exception as e:
-        if verbosity >= Verbosity.NORMAL:
+        if verbosity.value >= Verbosity.NORMAL.value:
             print(f"[NORMAL] Error renaming '{file_path}': {e}")
         return None
 
@@ -160,15 +149,15 @@ def move_mkv(file_path, base_dir, verbosity=Verbosity.NORMAL):
         final_destination = os.path.join(completed_dir, os.path.basename(file_path))
         os.makedirs(completed_dir, exist_ok=True)
         shutil.move(file_path, final_destination)
-        if verbosity >= Verbosity.DESTINATION:
+        if verbosity.value >= Verbosity.DESTINATION.value:
             print(f"[DESTINATION] Moved and Renamed: {file_path} to {final_destination}")
         return True
     except OSError as e:
-        if verbosity >= Verbosity.NORMAL:
+        if verbosity.value >= Verbosity.NORMAL.value:
             print(f"[NORMAL] Error moving '{file_path}': {e}")
         return False
     except Exception as e:
-        if verbosity >= Verbosity.NORMAL:
+        if verbosity.value >= Verbosity.NORMAL.value:
             print(f"[NORMAL] Error moving '{file_path}': {e}")
         return False
 
@@ -187,16 +176,16 @@ def convert_mkv_to_mp4(mkv_file, converted_dir, verbosity=Verbosity.NORMAL):
             input_stream = ffmpeg.input(mkv_file)
             output_stream = input_stream.output(output_file, loglevel='error', **encoder_options)
             output_stream.run(overwrite_output=True)
-            if verbosity >= Verbosity.VERBOSE:
+            if verbosity.value >= Verbosity.VERBOSE.value:
                 print(f"[VERBOSE] Converted: {mkv_file} to {output_file} using options: {encoder_options}")
             return output_file
         except ffmpeg.Error as e:
-            if verbosity >= Verbosity.NORMAL:
+            if verbosity.value >= Verbosity.NORMAL.value:
                 print(f"[NORMAL] ffmpeg failed for {mkv_file} with options {encoder_options}: {e.stderr.decode()}")
         except Exception as e:
-            if verbosity >= Verbosity.NORMAL:
+            if verbosity.value >= Verbosity.NORMAL.value:
                 print(f"[NORMAL] Error converting {mkv_file} with options {encoder_options}: {e}")
-    if verbosity >= Verbosity.NORMAL:
+    if verbosity.value >= Verbosity.NORMAL.value:
         print(f"[NORMAL] Failed to convert {mkv_file} with all encoder options.")
     return None
 
@@ -231,37 +220,37 @@ def process_directory_item(item_path, base_dir, season_number, verbosity=Verbosi
                     new_output_path = os.path.join(os.path.dirname(os.path.dirname(item_path)), os.path.basename(output_path))
                     try:
                         shutil.move(output_path, new_output_path)
-                        if verbosity >= Verbosity.VERBOSE:
+                        if verbosity.value >= Verbosity.VERBOSE.value:
                             print(f"[VERBOSE] Moved fused file to: {new_output_path}")
                         process_mkv_file(new_output_path, base_dir, season_number, verbosity)
                     except Exception as move_err:
-                        if verbosity >= Verbosity.NORMAL:
+                        if verbosity.value >= Verbosity.NORMAL.value:
                             print(f"[NORMAL] Error moving fused file: {move_err}")
                 else:
-                    if verbosity >= Verbosity.NORMAL:
+                    if verbosity.value >= Verbosity.NORMAL.value:
                         print(f"[NORMAL] Failed to fuse ts files from {item_path}")
 
             except FileNotFoundError:
-                if verbosity >= Verbosity.NORMAL:
+                if verbosity.value >= Verbosity.NORMAL.value:
                     print(f"[NORMAL] media.key not found in {os.path.dirname(item_path)}")
         else:
             if fuse_ts_files(item_path, None, output_path, verbosity):
                 new_output_path = os.path.join(os.path.dirname(os.path.dirname(item_path)), os.path.basename(output_path))
                 try:
                     shutil.move(output_path, new_output_path)
-                    if verbosity >= Verbosity.VERBOSE:
+                    if verbosity.value >= Verbosity.VERBOSE.value:
                         print(f"[VERBOSE] Moved fused file to: {new_output_path}")
                     process_mkv_file(new_output_path, base_dir, season_number, verbosity)
                 except Exception as move_err:
-                    if verbosity >= Verbosity.NORMAL:
+                    if verbosity.value >= Verbosity.NORMAL.value:
                         print(f"[NORMAL] Error moving fused file: {move_err}")
             else:
-                if verbosity >= Verbosity.NORMAL:
+                if verbosity.value >= Verbosity.NORMAL.value:
                     print(f"[NORMAL] Failed to fuse ts files from {item_path}")
 
 def process_directory(directory_path, base_dir, verbosity=Verbosity.NORMAL):
     if os.path.basename(directory_path).lower() == Config.COMPLETED_DIR_NAME.lower():
-        if verbosity >= Verbosity.NORMAL:
+        if verbosity.value >= Verbosity.NORMAL.value:
             print(f"[NORMAL] Skipping directory: {directory_path} (Folder named 'Completed')")
         return
     for item in os.listdir(directory_path):
@@ -273,7 +262,7 @@ def process_m3u8_directory(item_path, mkv_files_present, verbosity=Verbosity.NOR
     if m3u8_base_name in mkv_files_present:
         remove_m3u8_folder(item_path, verbosity)
     else:
-        if verbosity >= Verbosity.NORMAL:
+        if verbosity.value >= Verbosity.NORMAL.value:
             print(f"[NORMAL] Skipped removing m3u8 folder: {item_path} (No matching .mkv file)")
 
 def process_mkv_file(file_path, base_dir, season_number, verbosity=Verbosity.NORMAL):
@@ -298,31 +287,31 @@ def fuse_ts_files(m3u8_file, key_data, output_file, verbosity=Verbosity.NORMAL):
             input_stream = ffmpeg.input(m3u8_file, format='hls', allowed_extensions='ALL')
             output_stream = input_stream.output(output_file, **options)
             output_stream.run(overwrite_output=True)
-            if verbosity >= Verbosity.VERBOSE:
+            if verbosity.value >= Verbosity.VERBOSE.value:
                 print(f"[VERBOSE] Fused and converted TS files to: {output_file} with options: {options}")
             return True
         except ffmpeg.Error as e:
-            if verbosity >= Verbosity.NORMAL:
+            if verbosity.value >= Verbosity.NORMAL.value:
                 print(f"[NORMAL] FFmpeg error with options {options}: {e.stderr.decode()}")
         except FileNotFoundError:
-            if verbosity >= Verbosity.NORMAL:
+            if verbosity.value >= Verbosity.NORMAL.value:
                 print("Error: FFmpeg executable not found. Make sure it's in your PATH.")
             return False
         except Exception as e:
-            if verbosity >= Verbosity.NORMAL:
+            if verbosity.value >= Verbosity.NORMAL.value:
                 print(f"An unexpected error occurred: {e}")
             return False
-    if verbosity >= Verbosity.NORMAL:
+    if verbosity.value >= Verbosity.NORMAL.value:
         print(f"[NORMAL] Failed to fuse and convert .ts files into: {output_file} with all encoding options.")
     return False
 
 def process_selected_directory(starting_dir, storage_location, ignored_folders, verbosity=Verbosity.NORMAL):
     if not is_valid_directory(starting_dir):
-        if verbosity >= Verbosity.NORMAL:
+        if verbosity.value >= Verbosity.NORMAL.value:
             print(f"[NORMAL] Invalid starting directory: {starting_dir}")
         return
     if not is_valid_directory(storage_location):
-        if verbosity >= Verbosity.NORMAL:
+        if verbosity.value >= Verbosity.NORMAL.value:
             print(f"[NORMAL] Invalid storage location: {storage_location}")
         return
     if not os.path.exists(os.path.join(starting_dir, Config.COMPLETED_DIR_NAME)):
@@ -330,7 +319,7 @@ def process_selected_directory(starting_dir, storage_location, ignored_folders, 
     for item in os.listdir(starting_dir):
         item_path = os.path.join(starting_dir, item)
         if os.path.isdir(item_path) and item in ignored_folders:
-            if verbosity >= Verbosity.NORMAL:
+            if verbosity.value >= Verbosity.NORMAL.value:
                 print(f"[NORMAL] Skipping ignored folder: {item_path}")
             continue
         process_directory(item_path, starting_dir, verbosity)
@@ -400,24 +389,27 @@ def process_directory_gui():
 def run_gui():
     settings = config.load_settings()
     starting_dir, storage_location, ignored_folders = get_saved_paths(settings)
-    processing_paused = False
+
     def select_starting_directory():
         nonlocal starting_dir
         starting_dir = filedialog.askdirectory(title="Select Starting Directory")
         if starting_dir:
             starting_dir_entry.delete(0, tk.END)
             starting_dir_entry.insert(0, starting_dir)
+
     def select_storage_location():
         nonlocal storage_location
         storage_location = filedialog.askdirectory(title="Select Storage Location")
         if storage_location:
             storage_location_entry.delete(0, tk.END)
             storage_location_entry.insert(0, storage_location)
+
     def select_converted_directory():
         Config.CONVERTED_DIR = filedialog.askdirectory(title="Select Converted Directory")
         if Config.CONVERTED_DIR:
             converted_dir_entry.delete(0, tk.END)
             converted_dir_entry.insert(0, Config.CONVERTED_DIR)
+
     def add_ignored_folder():
         ignored_folder = filedialog.askdirectory(title="Select Ignored Folder")
         if ignored_folder:
@@ -425,63 +417,50 @@ def run_gui():
             if folder_name not in ignored_folders:
                 ignored_folders.append(folder_name)
                 ignored_folders_list.insert(tk.END, folder_name)
+
     def remove_ignored_folder():
         selected_index = ignored_folders_list.curselection()
         if selected_index:
             ignored_folders.pop(selected_index[0])
             ignored_folders_list.delete(selected_index[0])
+
     def start_processing():
-        nonlocal starting_dir, storage_location, ignored_folders, processing_paused
+        nonlocal starting_dir, storage_location, ignored_folders
         starting_dir = starting_dir_entry.get()
         storage_location = storage_location_entry.get()
         settings["starting_dir"] = starting_dir
         settings["storage_location"] = storage_location
         settings["ignored_folders"] = ";".join(ignored_folders)
         config.save_settings(settings)
-        processing_paused = False
-        cpu_label.config(text="CPU Usage: Calculating...")
-        ram_label.config(text="RAM Usage: Calculating...")
-        update_usage()
+
         process_selected_directory(starting_dir, storage_location, ignored_folders, Verbosity.NORMAL)
         messagebox.showinfo("Processing Complete", "MKV files have been processed.")
-        cpu_label.config(text="CPU Usage: Idle")
-        ram_label.config(text="RAM Usage: Idle")
-    def update_usage():
-        nonlocal processing_paused
-        cpu_percent = psutil.cpu_percent(interval=1)
-        ram_percent = psutil.virtual_memory().percent
-        cpu_label.config(text=f"CPU Usage: {cpu_percent}%")
-        ram_label.config(text=f"RAM Usage: {ram_percent}%")
-        try:
-            max_cpu = int(max_cpu_entry.get())
-            if cpu_percent > max_cpu and not processing_paused:
-                processing_paused = True
-                messagebox.showinfo("CPU Limit Reached", f"CPU usage exceeded {max_cpu}%. Processing paused.")
-            elif cpu_percent <= max_cpu and processing_paused:
-                processing_paused = False
-                messagebox.showinfo("CPU Usage Normal", f"CPU usage below {max_cpu}%. Processing resumed.")
-        except ValueError:
-            pass
-        root.after(1000, update_usage)
+
     def fuse_ts_files_gui():
         m3u8_file = filedialog.askopenfilename(title="Select m3u8 File", filetypes=[("m3u8 files", "*.m3u8")])
         if not m3u8_file:
             return
+
         key_file = filedialog.askopenfilename(title="Select Key File", filetypes=[("key files", "*.key")])
         if not key_file:
             return
+
         output_file = os.path.splitext(m3u8_file)[0] + ".mp4"
+
         try:
             with open(key_file, "rb") as f:
                 key_data = f.read()
+
             if fuse_ts_files(m3u8_file, key_data, output_file, Verbosity.NORMAL):
                 messagebox.showinfo("Fusion Complete", f"TS files fused to: {output_file}")
             else:
                 messagebox.showerror("Fusion Failed", "Failed to fuse TS files.")
         except FileNotFoundError:
             messagebox.showerror("Key File Error", "Key file not found.")
+
     root = tk.Tk()
     root.title("MKV Renamer and Mover")
+
     starting_dir_label = tk.Label(root, text="Starting Directory:")
     starting_dir_label.pack()
     starting_dir_entry = tk.Entry(root, width=50)
@@ -490,6 +469,7 @@ def run_gui():
         starting_dir_entry.insert(0, starting_dir)
     starting_dir_button = tk.Button(root, text="Browse", command=select_starting_directory)
     starting_dir_button.pack()
+
     storage_location_label = tk.Label(root, text="Storage Location:")
     storage_location_label.pack()
     storage_location_entry = tk.Entry(root, width=50)
@@ -498,6 +478,7 @@ def run_gui():
         storage_location_entry.insert(0, storage_location)
     storage_location_button = tk.Button(root, text="Browse", command=select_storage_location)
     storage_location_button.pack()
+
     converted_dir_label = tk.Label(root, text="Converted Directory:")
     converted_dir_label.pack()
     converted_dir_entry = tk.Entry(root, width=50)
@@ -506,6 +487,7 @@ def run_gui():
         converted_dir_entry.insert(0, Config.CONVERTED_DIR)
     converted_dir_button = tk.Button(root, text="Browse", command=select_converted_directory)
     converted_dir_button.pack()
+
     ignored_folders_label = tk.Label(root, text="Ignored Folders:")
     ignored_folders_label.pack()
     ignored_folders_list = Listbox(root, width=50, selectmode=tk.SINGLE)
@@ -516,23 +498,19 @@ def run_gui():
     add_ignored_button.pack()
     remove_ignored_button = tk.Button(root, text="Remove Selected Folder", command=remove_ignored_folder)
     remove_ignored_button.pack()
+
     start_button = tk.Button(root, text="Start Processing", command=start_processing)
     start_button.pack(pady=20)
-    cpu_label = tk.Label(root, text="CPU Usage: Idle")
-    cpu_label.pack()
-    ram_label = tk.Label(root, text="RAM Usage: Idle")
-    ram_label.pack()
-    max_cpu_label = tk.Label(root, text="Max CPU Usage (%):")
-    max_cpu_label.pack()
-    max_cpu_entry = tk.Entry(root, width=10)
-    max_cpu_entry.pack()
-    max_cpu_entry.insert(0, "90")
+
     fuse_button = tk.Button(root, text="Fuse TS Files", command=fuse_ts_files_gui)
     fuse_button.pack(pady=10)
-    process_dir_button = tk.Button(root, text="Process TS Directory", command=process_directory_gui)
-    process_dir_button.pack(pady=20)
-    delete_folders_button = tk.Button(root, text="Delete .m3u8 Folders in Directory", command=delete_m3u8_folders_gui)
+
+    manual_ts_button = tk.Button(root, text="Process TS Directory", command=process_directory_gui)
+    manual_ts_button.pack(pady=20)
+
+    delete_folders_button = tk.Button(root, text="Delete .m3u8 Folders", command=delete_m3u8_folders_gui)
     delete_folders_button.pack(pady=10)
+
     root.mainloop()
 
 def main():
@@ -540,3 +518,8 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
