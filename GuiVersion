@@ -1,12 +1,11 @@
 #--- This version requires you to do pip install ffmpeg-python
 #--- Thankyou
 
-
 import os
 import re
 import shutil
 import tkinter as tk
-from tkinter import filedialog, messagebox, Listbox
+from tkinter import filedialog, messagebox, Listbox, Scrollbar, Canvas, Frame
 import configparser
 import ffmpeg
 from enum import Enum
@@ -56,6 +55,7 @@ class Config:
             return {}
 
 config = Config()
+
 
 def is_folder_empty(folder_path, verbosity=Verbosity.NORMAL):
     is_empty = not any(os.scandir(folder_path))
@@ -465,54 +465,76 @@ def run_gui():
     root = tk.Tk()
     root.title("MKV Renamer and Mover")
 
-    starting_dir_label = tk.Label(root, text="Starting Directory:")
+    # Create a Canvas and Scrollbars
+    canvas = Canvas(root)
+    scrollbar_y = Scrollbar(root, orient="vertical", command=canvas.yview)
+    scrollbar_x = Scrollbar(root, orient="horizontal", command=canvas.xview)
+    scrollable_frame = Frame(canvas)
+
+    scrollable_frame.bind(
+        "<Configure>",
+        lambda e: canvas.configure(
+            scrollregion=canvas.bbox("all")
+        )
+    )
+
+    canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+
+    canvas.configure(yscrollcommand=scrollbar_y.set, xscrollcommand=scrollbar_x.set)
+
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar_y.pack(side="right", fill="y")
+    scrollbar_x.pack(side="bottom", fill="x")
+
+    # Place your GUI elements in the scrollable_frame
+    starting_dir_label = tk.Label(scrollable_frame, text="Starting Directory:")
     starting_dir_label.pack()
-    starting_dir_entry = tk.Entry(root, width=50)
+    starting_dir_entry = tk.Entry(scrollable_frame, width=50)
     starting_dir_entry.pack()
     if starting_dir:
         starting_dir_entry.insert(0, starting_dir)
-    starting_dir_button = tk.Button(root, text="Browse", command=select_starting_directory)
+    starting_dir_button = tk.Button(scrollable_frame, text="Browse", command=select_starting_directory)
     starting_dir_button.pack()
 
-    storage_location_label = tk.Label(root, text="Storage Location:")
+    storage_location_label = tk.Label(scrollable_frame, text="Storage Location:")
     storage_location_label.pack()
-    storage_location_entry = tk.Entry(root, width=50)
+    storage_location_entry = tk.Entry(scrollable_frame, width=50)
     storage_location_entry.pack()
     if storage_location:
         storage_location_entry.insert(0, storage_location)
-    storage_location_button = tk.Button(root, text="Browse", command=select_storage_location)
+    storage_location_button = tk.Button(scrollable_frame, text="Browse", command=select_storage_location)
     storage_location_button.pack()
 
-    converted_dir_label = tk.Label(root, text="Converted Directory:")
+    converted_dir_label = tk.Label(scrollable_frame, text="Converted Directory:")
     converted_dir_label.pack()
-    converted_dir_entry = tk.Entry(root, width=50)
+    converted_dir_entry = tk.Entry(scrollable_frame, width=50)
     converted_dir_entry.pack()
     if Config.CONVERTED_DIR:
         converted_dir_entry.insert(0, Config.CONVERTED_DIR)
-    converted_dir_button = tk.Button(root, text="Browse", command=select_converted_directory)
+    converted_dir_button = tk.Button(scrollable_frame, text="Browse", command=select_converted_directory)
     converted_dir_button.pack()
 
-    ignored_folders_label = tk.Label(root, text="Ignored Folders:")
+    ignored_folders_label = tk.Label(scrollable_frame, text="Ignored Folders:")
     ignored_folders_label.pack()
-    ignored_folders_list = Listbox(root, width=50, selectmode=tk.SINGLE)
+    ignored_folders_list = Listbox(scrollable_frame, width=50, selectmode=tk.SINGLE)
     for folder in ignored_folders:
         ignored_folders_list.insert(tk.END, folder)
     ignored_folders_list.pack()
-    add_ignored_button = tk.Button(root, text="Add Ignored Folder", command=add_ignored_folder)
+    add_ignored_button = tk.Button(scrollable_frame, text="Add Ignored Folder", command=add_ignored_folder)
     add_ignored_button.pack()
-    remove_ignored_button = tk.Button(root, text="Remove Selected Folder", command=remove_ignored_folder)
+    remove_ignored_button = tk.Button(scrollable_frame, text="Remove Selected Folder", command=remove_ignored_folder)
     remove_ignored_button.pack()
 
-    start_button = tk.Button(root, text="Start Processing", command=start_processing)
+    start_button = tk.Button(scrollable_frame, text="Start Processing", command=start_processing)
     start_button.pack(pady=20)
 
-    fuse_button = tk.Button(root, text="Fuse TS Files", command=fuse_ts_files_gui)
+    fuse_button = tk.Button(scrollable_frame, text="Fuse TS Files", command=fuse_ts_files_gui)
     fuse_button.pack(pady=10)
 
-    manual_ts_button = tk.Button(root, text="Process TS Directory", command=process_directory_gui)
+    manual_ts_button = tk.Button(scrollable_frame, text="Process TS Directory", command=process_directory_gui)
     manual_ts_button.pack(pady=20)
 
-    delete_folders_button = tk.Button(root, text="Delete .m3u8 Folders", command=delete_m3u8_folders_gui)
+    delete_folders_button = tk.Button(scrollable_frame, text="Delete .m3u8 Folders", command=delete_m3u8_folders_gui)
     delete_folders_button.pack(pady=10)
 
     root.mainloop()
