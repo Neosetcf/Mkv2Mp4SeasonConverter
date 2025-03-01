@@ -1,3 +1,7 @@
+#--- This version requires you to do pip install ffmpeg-python
+#--- Thankyou
+
+
 import os
 import re
 import shutil
