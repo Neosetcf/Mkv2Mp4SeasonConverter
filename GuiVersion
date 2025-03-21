@@ -213,15 +213,28 @@ def process_directory_item(item_path, base_dir, season_number, verbosity=Verbosi
     elif item_path.endswith((".mkv", ".mp4")):
         process_mkv_file(item_path, base_dir, season_number, verbosity)
     elif item_path.endswith(".m3u8"):
-        m3u8_name = os.path.splitext(os.path.basename(item_path))[0]
+        dir_name = os.path.basename(os.path.dirname(item_path))  # Get the folder name (e.g., "12.m3u8")
+
+        # Extract the episode number from the folder name
+        episode_number = None
+        if dir_name.endswith(".m3u8"):
+            episode_number = dir_name[:-5]  # Remove ".m3u8" to get the episode number
+
+        # If episode_number is not extracted, fall back to the folder name
+        if not episode_number:
+            episode_number = dir_name
+
+        # Construct the output file name
+        output_file_name = f"S{season_number}E{episode_number}.mp4"
+        output_path = os.path.join(os.path.dirname(item_path), output_file_name)
+
         key_path = os.path.join(os.path.dirname(item_path), "media.key")
-        output_path = os.path.join(os.path.dirname(item_path), f"{m3u8_name}.mp4")
         if os.path.exists(key_path):
             try:
                 with open(key_path, "rb") as key_file:
                     key_data = key_file.read()
                 if fuse_ts_files(item_path, key_data, output_path, verbosity):
-                    new_output_path = os.path.join(os.path.dirname(os.path.dirname(item_path)), os.path.basename(output_path))
+                    new_output_path = os.path.join(os.path.dirname(os.path.dirname(item_path)), output_file_name)
                     try:
                         shutil.move(output_path, new_output_path)
                         if verbosity.value >= Verbosity.VERBOSE.value:
@@ -233,13 +246,12 @@ def process_directory_item(item_path, base_dir, season_number, verbosity=Verbosi
                 else:
                     if verbosity.value >= Verbosity.NORMAL.value:
                         print(f"[NORMAL] Failed to fuse ts files from {item_path}")
-
             except FileNotFoundError:
                 if verbosity.value >= Verbosity.NORMAL.value:
                     print(f"[NORMAL] media.key not found in {os.path.dirname(item_path)}")
         else:
             if fuse_ts_files(item_path, None, output_path, verbosity):
-                new_output_path = os.path.join(os.path.dirname(os.path.dirname(item_path)), os.path.basename(output_path))
+                new_output_path = os.path.join(os.path.dirname(os.path.dirname(item_path)), output_file_name)
                 try:
                     shutil.move(output_path, new_output_path)
                     if verbosity.value >= Verbosity.VERBOSE.value:
@@ -349,20 +361,28 @@ def process_directory_gui():
     directory = filedialog.askdirectory(title="Select Directory to Process")
     if not directory:
         return
+
     def process_m3u8_files(root_dir):
         for root, dirs, files in os.walk(root_dir):
             for file in files:
                 if file.endswith(".m3u8"):
                     m3u8_path = os.path.join(root, file)
-                    file_name_without_ext = os.path.splitext(file)[0]
-                    if file == "media.m3u8":
-                        dir_name = os.path.basename(root)
-                        if dir_name.endswith(".m3u8"):
-                            dir_name = dir_name[:-5]
-                        output_file_name = dir_name + ".mp4"
-                    else:
-                        output_file_name = file_name_without_ext + ".mp4"
+                    dir_name = os.path.basename(root)  # Get the folder name (e.g., "12.m3u8")
+
+                    # Extract the episode number from the folder name
+                    episode_number = None
+                    if dir_name.endswith(".m3u8"):
+                        episode_number = dir_name[:-5]  # Remove ".m3u8" to get the episode number
+
+                    # If episode_number is not extracted, fall back to the folder name
+                    if not episode_number:
+                        episode_number = dir_name
+
+                    # Construct the output file name
+                    output_file_name = f"S1E{episode_number}.mp4"
                     output_file = os.path.join(root, output_file_name)
+
+                    # Check for the key file
                     key_file = os.path.join(root, "media.key")
                     if os.path.exists(key_file):
                         try:
@@ -387,6 +407,7 @@ def process_directory_gui():
                             print(f"Moved {output_file_name} to {parent_dir}")
                         else:
                             print(f"Failed to process: {m3u8_path}")
+
     process_m3u8_files(directory)
     messagebox.showinfo("Processing Complete", "All m3u8 files have been processed.")
 
@@ -544,7 +565,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
 
 
